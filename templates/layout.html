@@ -9,12 +9,16 @@
         <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
     </head>
     <body>
+    <div class="content container">
         <div class="page-header">
             {% if user.is_authenticated %}
-                <a href="{% url 'menu_new' %}" class="top-menu"><span class="glyphicon glyphicon-plus"></span></a>
+                <h1 style="float:right;"><a href="{% url 'menu_new' %}">New Menu</a></h1>
             {% endif %}
-            <h1><a href="/">Soda Fountain</a></h1>
+                <h1 style="float:left;"><a href="/">Soda Fountain</a></h1>
         </div>
+        <div class="page-header">
+        </div>
+    </div>
         <div class="content container">
             <div class="row">
                 <div class="col-md-8">

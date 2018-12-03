@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import Http404
 from django.utils import timezone
 from operator import attrgetter
+from django.forms.models import model_to_dict
 from datetime import datetime
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -16,15 +17,30 @@ def menu_list(request):
     :return: view of all menu items that meet the criteria.
     """
     menus = Menu.objects.prefetch_related('items') \
-        .filter(Q(expiration_date__gte=datetime.now(timezone.get_current_timezone())) | Q(expiration_date__isnull=True)) \
+        .filter(Q(expiration_date__gte=datetime.datetime.now(timezone.get_current_timezone())) | Q(expiration_date__isnull=True)) \
         .order_by('expiration_date')
     return render(request, 'menu/list_all_current_menus.html', {'menus': menus})
 
 def menu_detail(request, pk):
-    menu = Menu.objects.get(pk=pk)
+    """
+    Gets the details for a chosen menu.
+    :param request: boilerplate Django request param.
+    :param pk: The menu id.
+    :return: a view with the menu details.
+    """
+    try:
+        menu = Menu.objects.prefetch_related('items').get(pk=pk)
+    except ObjectDoesNotExist:
+        raise Http404
     return render(request, 'menu/menu_detail.html', {'menu': menu})
 
 def item_detail(request, pk):
+    """
+    Gets the details for a chosen item.
+    :param request: boilerplate Django request param.
+    :param pk: The menu id.
+    :return: a view with the item details.
+    """
     try: 
         item = Item.objects.get(pk=pk)
     except ObjectDoesNotExist:
@@ -38,6 +54,7 @@ def create_new_menu(request):
             menu = form.save(commit=False)
             menu.created_date = timezone.now()
             menu.save()
+            form.save_m2m()
             return redirect('menu_detail', pk=menu.pk)
     else:
         form = MenuForm()
