@@ -5,20 +5,26 @@
 <html>
     <head>
         <title>Soda Fountain</title>
-        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
     </head>
     <body>
-    <div class="content container">
-        <div class="page-header">
+        <div class="content container">
+            <div class="page-header">
+            <h1 style="float:left;"><a href="/">Soda Fountain</a></h1>
             {% if user.is_authenticated %}
-                <h1 style="float:right;"><a href="{% url 'menu_new' %}">New Menu</a></h1>
+                <h4 style="float:right;"><a href="{% url 'sign_out' %}">Logout</a></h4>
+                <h4 style="float:right;"><a href="{% url 'menu_new' %}">New Menu</a></h4>
+            {% else %}
+                <h4 style="float:right;"><a href="{% url 'sign_up' %}">Sign Up</a></h4>
+                <h4 style="float:right;">--OR--</h4>
+                <h4 style="float:right;"><a href="{% url 'sign_in' %}">Sign In</a></h4>
             {% endif %}
-                <h1 style="float:left;"><a href="/">Soda Fountain</a></h1>
+            </div>
+            <div class="page-header">
+            </div>
         </div>
-        <div class="page-header">
-        </div>
-    </div>
+    <div>
         <div class="content container">
             <div class="row">
                 <div class="col-md-8">

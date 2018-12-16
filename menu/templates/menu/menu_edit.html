@@ -2,10 +2,20 @@
 {% load static %}
 
 {% block content %}
-    <h1>Change menu</h1>
-    <form method="POST" class="menu-form">
+    {% if form.season.initial %}
+    <h1>Change Menu</h1>
+    <form method="POST" class="menu-form" action="{% url 'menu_edit' %}">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit" class="save btn btn-default">Save</button>
     </form>
+    {% else %}
+    <h1>New Menu</h1>
+    <form method="POST" class="menu-form" action="{% url 'menu_new' %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="save btn btn-default">Save</button>
+    </form>
+    {% endif %}
 {% endblock %}
+

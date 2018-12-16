@@ -6,6 +6,9 @@ from . import views
 
 urlpatterns = [
     url(r'^$', views.menu_list, name='menu_list'),
+    url(r'signup/$', views.sign_up, name='sign_up'),
+    url(r'signin/$', views.sign_in, name='sign_in'),
+    url(r'sign_out/$', views.sign_out, name='sign_out'),
     url(r'^menu/(?P<pk>\d+)/edit/$', views.edit_menu, name='menu_edit'),
     url(r'^menu/(?P<pk>\d+)/$', views.menu_detail, name='menu_detail'),
     url(r'^menu/new/$', views.create_new_menu, name='menu_new'),

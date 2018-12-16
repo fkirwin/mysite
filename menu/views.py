@@ -1,13 +1,19 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import Http404
-from django.utils import timezone
-from operator import attrgetter
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.decorators import login_required
 from django.forms.models import model_to_dict
 from datetime import datetime
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from .models import *
 from .forms import *
+
+#TODO: Form validation is corrected for proper use of clean(), clean_field(), and validators.
+#TODO: No view has more than 5 queries. Queries take less than 100ms combined.
+#TODO: Test coverage is at or above 75%.
 
 def menu_list(request):
     """
@@ -47,7 +53,13 @@ def item_detail(request, pk):
         raise Http404
     return render(request, 'menu/detail_item.html', {'item': item})
 
+@login_required
 def create_new_menu(request):
+    """
+    Creates a new menu with options available from the DB.
+    :param request:  Django request object
+    :return: Redirect to menu detail.
+    """
     if request.method == "POST":
         form = MenuForm(request.POST)
         if form.is_valid():
@@ -60,16 +72,64 @@ def create_new_menu(request):
         form = MenuForm()
     return render(request, 'menu/menu_edit.html', {'form': form})
 
+@login_required
 def edit_menu(request, pk):
+    """
+    Allows for existing menus to be edited.
+    :param request:  Django request object
+    :return: Redirect to menu detail.
+    """
     menu = get_object_or_404(Menu, pk=pk)
-    items = Item.objects.all()
     if request.method == "POST":
-        menu.season = request.POST.get('season', '')
-        menu.expiration_date = datetime.strptime(request.POST.get('expiration_date', ''), '%m/%d/%Y')
-        menu.items = request.POST.get('items', '')
-        menu.save()
+        form = MenuForm(request.POST)
+        if form.is_valid():
+            menu = form.save(commit=False)
+            menu.created_date = timezone.now()
+            menu.save()
+            form.save_m2m()
+            return redirect('menu_detail', pk=menu.pk)
+    else:
+        form = MenuForm(initial=model_to_dict(menu))
+    return render(request, 'menu/menu_edit.html', {'form': form})
 
-    return render(request, 'menu/change_menu.html', {
-        'menu': menu,
-        'items': items,
-        })
+
+def sign_in(request):
+    """Signs user in.  Uses default Django forms and models."""
+    form = AuthenticationForm()
+    if request.method == 'POST':
+        form = AuthenticationForm(data=request.POST)
+        if form.is_valid():
+            if form.user_cache is not None:
+                user = form.user_cache
+                if user.is_active:
+                    login(request, user)
+                    return redirect('menu_list')
+                else:
+                    messages.error(request, "That user account has been disabled.")
+            else:
+                messages.error(request, "Username or password is incorrect.")
+    return render(request, 'menu/sign_in.html', {'form': form})
+
+
+def sign_up(request):
+    """Used for user registration.  Uses default forms and models from Django."""
+    form = UserCreationForm()
+    if request.method == 'POST':
+        form = UserCreationForm(data=request.POST)
+        if form.is_valid():
+            form.save()
+            user = authenticate(
+                username=form.cleaned_data['username'],
+                password=form.cleaned_data['password1']
+            )
+            login(request, user)
+            messages.success(request, "You're now a user! You've been signed in, too.")
+            return redirect('menu_list')
+    return render(request, 'menu/sign_up.html', {'form': form})
+
+
+def sign_out(request):
+    """Default sign out view."""
+    logout(request)
+    messages.success(request, "You've been signed out. Come back soon!")
+    return redirect('menu_list')
