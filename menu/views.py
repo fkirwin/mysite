@@ -11,9 +11,9 @@ from django.db.models import Q
 from .models import *
 from .forms import *
 
-#TODO: Form validation is corrected for proper use of clean(), clean_field(), and validators.
-#TODO: No view has more than 5 queries. Queries take less than 100ms combined.
+
 #TODO: Test coverage is at or above 75%.
+
 
 def menu_list(request):
     """
@@ -40,6 +40,7 @@ def menu_detail(request, pk):
         raise Http404
     return render(request, 'menu/menu_detail.html', {'menu': menu})
 
+
 def item_detail(request, pk):
     """
     Gets the details for a chosen item.
@@ -51,7 +52,8 @@ def item_detail(request, pk):
         item = Item.objects.get(pk=pk)
     except ObjectDoesNotExist:
         raise Http404
-    return render(request, 'menu/detail_item.html', {'item': item})
+    return render(request, 'menu/item_detail.html', {'item': item})
+
 
 @login_required
 def create_new_menu(request):
@@ -72,6 +74,7 @@ def create_new_menu(request):
         form = MenuForm()
     return render(request, 'menu/menu_edit.html', {'form': form})
 
+
 @login_required
 def edit_menu(request, pk):
     """
@@ -80,17 +83,40 @@ def edit_menu(request, pk):
     :return: Redirect to menu detail.
     """
     menu = get_object_or_404(Menu, pk=pk)
+    form = MenuForm(initial=model_to_dict(menu))
     if request.method == "POST":
         form = MenuForm(request.POST)
         if form.is_valid():
             menu = form.save(commit=False)
-            menu.created_date = timezone.now()
+            menu.pk = pk
             menu.save()
             form.save_m2m()
             return redirect('menu_detail', pk=menu.pk)
+    return render(request, 'menu/menu_edit.html', {'form': form, 'pk': pk})
+
+
+@login_required
+def edit_item(request, pk):
+    """
+    Allows for existing items to be edited.
+    :param request:  Django request object
+    :return: Redirect to menu detail.
+    """
+    try:
+        item = Item.objects.get(pk=pk)
+    except ObjectDoesNotExist:
+        raise Http404
+    if request.method == "POST":
+        form = ItemForm(request.POST)
+        if form.is_valid():
+            item = form.save(commit=False)
+            item.pk = pk
+            item.save()
+            form.save_m2m()
+            return redirect('item_detail', pk=item.pk)
     else:
-        form = MenuForm(initial=model_to_dict(menu))
-    return render(request, 'menu/menu_edit.html', {'form': form})
+        form = ItemForm(initial=model_to_dict(item))
+    return render(request, 'menu/item_edit.html', {'form': form, 'pk': pk})
 
 
 def sign_in(request):

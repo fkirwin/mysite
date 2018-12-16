@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% load static %}
+
+{% block content %}
+    <h1>Change Item</h1>
+    <form method="POST" class="menu-form" action="{% url 'item_edit' pk=pk %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="save btn btn-default">Save</button>
+    </form>
+{% endblock %}
+
