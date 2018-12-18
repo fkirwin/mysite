@@ -3,35 +3,13 @@ import os
 import sqlite3
 from sqlite3 import Error
 
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
 from .models import *
 from .forms import *
 
-user = get_user_model().objects.create_user('zoidberg')
-ingredient1 = Ingredient('Beer')
-ingredient2 = Ingredient('Juice')
-item1 = Item()
-item2 = Item()
-menus = Menu()
-
-#Model
-class ModelTests(TestCase):
-
-    def test_new_menu_success(self):
-        """lion = Animal.objects.get(name="lion")
-        cat = Animal.objects.get(name="cat")
-        self.assertEqual(lion.speak(), 'The lion says "roar"')
-        self.assertEqual(cat.speak(), 'The cat says "meow"')"""
-        pass
-
-    def test_new_menu_failure(self):
-        pass
-
-    def test_update_menu_item_success(self):
-        pass
 
 #View
 class ViewTests(TestCase):
@@ -59,70 +37,95 @@ class ViewTests(TestCase):
     def edit_item(self):
         pass
 
-    def sign_in(self):
-        pass
-
-    def sign_up(self):
-        pass
-
-    def sign_out(self):
-        pass
-
 
 #Form
 class FormTests(TestCase):
 
     def setUp(self):
-        #self.user = get_user_model().objects.create_user('zoidberg')
-        #self.item = Item.objects.first()
-        #print(self.item)
+        user = get_user_model().objects.create_user('zoidberg')
+        self.user = user
+        ingredient1 = Ingredient(name='Beer')
+        ingredient1.save()
+        ingredient2 = Ingredient(name='Juice')
+        ingredient2.save()
+        item1 = Item(name='Purple Drink',
+                     description='blah',
+                     chef=user,
+                     standard=True)
+        item1.save()
+        item1.ingredients=[ingredient1, ingredient2]
+        item1.save()
+        item2 = Item(name='Beers',
+                     description='crunk',
+                     chef=user,
+                     standard=True)
+        item2.save()
+        item2.ingredients=[ingredient1]
+        item2.save()
+        menus = Menu(season="Startime",
+                     expiration_date=None)
+        menus.save()
+        menus.items=[item1, item2]
+        menus.save()
+        self.item = Item.objects.first()
+        self.ingredient = Ingredient.objects.first()
 
 
-    def test_valid_menu_data(self):
-        form = MenuForm({
+    def test_menu_form(self):
+        good_form = MenuForm({
             'season': "June",
-            'items': self.item,
+            'items': [self.item],
             'expiration_date': None,
         })
-        self.assertTrue(form.is_valid())
-        menu = form.save()
-        self.assertEqual(menu.season, "June")
-        self.assertEqual(menu.items, self.item)
-        self.assertIsInstance(menu.items[0], Item)
-        self.assertEqual(menu.expiration_date, None)
-
-
-    def test_blank_menu_data(self):
-        pass
-        '''
-        form = CommentForm({}, entry=self.entry)
-        self.assertFalse(form.is_valid())
-        self.assertEqual(form.errors, {
-            'name': ['required'],
-            'email': ['required'],
-            'body': ['required'],
+        bad_form = MenuForm({
+            'season': None,
+            'items': [self.item],
+            'expiration_date': datetime.date.day,
         })
-
-    def test_valid_item_data(self):
-        form = CommentForm({
-            'name': "Turanga Leela",
-            'email': "leela@example.com",
-            'body': "Hi there",
-        }, entry=self.entry)
-        self.assertTrue(form.is_valid())
-        comment = form.save()
-        self.assertEqual(comment.name, "Turanga Leela")
-        self.assertEqual(comment.email, "leela@example.com")
-        self.assertEqual(comment.body, "Hi there")
-        self.assertEqual(comment.entry, self.entry)
-
-    def test_blank_item_data(self):
-        form = CommentForm({}, entry=self.entry)
-        self.assertFalse(form.is_valid())
-        self.assertEqual(form.errors, {
-            'name': ['required'],
-            'email': ['required'],
-            'body': ['required'],
+        self.assertTrue(good_form.is_valid())
+        self.assertFalse(bad_form.is_valid())
+        self.assertEqual(good_form.data['season'], "June")
+        self.assertEqual(good_form.data['items'][0], self.item)
+        self.assertIsInstance(good_form.data['items'][0], Item)
+        self.assertEqual(good_form.data['expiration_date'], None)
+        client = Client()
+        response = client.post('/menu/new/', {
+            'season': "June",
+            'items': [self.item],
+            'expiration_date': None,
         })
+        self.assertEqual(response.status_code, 302)
 
-'''
+
+    def test_item_form(self):
+        good_form = ItemForm({
+            'name': "Booze",
+            'description': 'Get you drunk',
+            'chef':1,
+            'standard':True,
+            'ingredients':[self.ingredient]
+        })
+        bad_form = ItemForm({
+            'name': None,
+            'description': 'Get you drunk',
+            'chef':self.user,
+            'standard':True,
+            'ingredients':[self.ingredient, 'turkey']
+        })
+        print(good_form.errors)
+        print(good_form.__dict__)
+        self.assertTrue(good_form.is_valid())
+        self.assertFalse(bad_form.is_valid())
+        self.assertEqual(good_form.data['name'], "Booze")
+        self.assertEqual(good_form.data['ingredients'][0], self.ingredient)
+        self.assertIsInstance(good_form.data['ingredients'][0], Ingredient)
+        client = Client()
+        response = client.post('/menu/item/1/edit/', {
+            'name': "Booze",
+            'description': 'Get you drunk',
+            'chef':1,
+            'standard':False,
+            'ingredients':[self.ingredient]
+        })
+        self.assertEqual(response.status_code, 302)
+
